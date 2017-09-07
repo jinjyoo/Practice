@@ -1,0 +1,124 @@
+# https://sqlzoo.net/wiki/SELECT_from_WORLD_Tutorial
+SELECT name, population, area FROM world
+  WHERE name IN ('Brazil', 'Russia', 'India', 'China')
+  WHERE area BETWEEN 250000 AND 300000;   ### Note that this is INCLUSIVE
+select name, population, area from world where area > 3000000 xor population > 250000000  # XOR
+SELECT name, gdp/population FROM world WHERE population >= 200000000   # can do arithmetic with own columns
+select name, ROUND(population/1000000, 2), round(gdp/1000000000, 2) from world where continent = 'South America'  # round
+select name, round(gdp/population, -3) from world where gdp >= 1000000000000  # round to the nearest thousands place
+select name, capital from world where length(name) = length(capital) # length
+
+ 
+SELECT name, capital FROM world where left(name, 1) = left(capital, 1) and name <> capital  # https://sqlzoo.net/wiki/LEFT    
+select name, capital from world where substr(name, 1, 1) = substr(capital, 1, 1) and name <> capital
+SELECT name FROM world WHERE name LIKE capital  # best to just use '='
+SELECT name FROM world WHERE capital LIKE concat(name, ' City')     ###
+SELECT capital, name FROM world WHERE capital like concat('%%', name, '%%')    ### NOT "LIKE %name%", need quotation marks
+																				### Note the quotations around %%
+select name, replace(capital, name, '') as extension from world where capital like concat(name, '%%') and capital <> name 
+# ^ get the name of the extension, e.g. Mexico, City
+
+SELECT * FROM table WHERE CONTAINS(Column, 'test');  
+# ^ better than: SELECT * FROM table WHERE Column LIKE '%test%';, since former can use some form of indexing
+
+SELECT * FROM Customers WHERE UPPER(LastName) = UPPER('AnGel')   # Case-insensitive matching
+select winner, yr, subject from nobel where winner like 'Sir_%' order by yr DESC, winner ASC  
+
+SELECT winner, subject, subject IN ('Physics','Chemistry')   ### will be column of binary 0/1
+
+SELECT winner, subject FROM nobel WHERE yr=1984 
+ORDER BY subject IN ('Chemistry', 'Physics'), subject, winner   # legal in some like MySQL, but not in Oracle; not standard
+ORDER BY CASE WHEN subject in ('Chemistry', 'Physics') THEN 1 ELSE 0 END, subject, winner  ### Equivalent, legal SQL 
+
+
+# Subqueries: https://sqlzoo.net/wiki/SELECT_within_SELECT_Tutorial
+SELECT name, continent FROM world WHERE continent in   ### Assume you don't know what continent they're from...
+	(SELECT continent FROM world WHERE name in ('Argentina', 'Australia')) ORDER BY name
+select name, population from world where population > (select population from world where name = 'Canada') AND 
+	population < (select population from world where name = 'Poland')
+SELECT name, CONCAT(ROUND(population/(SELECT population FROM world WHERE name='Germany')*100), '%') AS 
+`population (w.r.t. Germany)` FROM world WHERE continent='Europe'   ### Population as percentage of Germany
+# ALL: can use the word ALL to allow >= or > or < or <=to act over a list
+SELECT name FROM world WHERE gdp > ALL(SELECT gdp FROM world WHERE continent='Europe' AND gdp > 0)  # some have NULL gdp
+SELECT name FROM world WHERE gdp >    # Equivalent 1
+	(SELECT gdp FROM world WHERE continent='Europe' AND gdp > 0 ORDER BY gdp DESC LIMIT 1)
+SELECT name FROM world where gdp > (SELECT MAX(gdp) from world where continent='Europe')  # Eqvuialent 2
+
+# Note: technically don't need x.<field> but better for clarity
+SELECT continent, name, area FROM world x    ### Get the largest countries (by area) of each continent
+	WHERE area >= ALL(SELECT area FROM world y WHERE y.continent=x.continent AND area>0) # ORDER BY area DESC LIMIT 1
+
+SELECT continent, name FROM world AS x WHERE name =    # Countries that are alphabetically first from each continent
+	(SELECT name FROM world AS y WHERE x.continent=y.continent ORDER BY name LIMIT 1)
+# Changed "=" from "in" since: 'This version of MariaDB doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'
+SELECT name, continent, population FROM world as x WHERE 25000000 >   # Continents where all countries have pop. < 25 million
+	(SELECT MAX(population) FROM world as y WHERE x.continent=y.continent)
+
+SELECT x.name, x.continent FROM world as x WHERE x.population > # Countries w/ > 3*pop. of others in same continent 
+	(SELECT 3*max(population) FROM world as y WHERE x.continent=y.continent AND x.name != y.name)
+
+"""Aggregates (SUM, COUNT, MAX, AVG): https://sqlzoo.net/wiki/SUM_and_COUNT"""
+SELECT COUNT(DISTINCT name) FROM world WHERE area >= 1000000
+SELECT continent, SUM(population) FROM world GROUP BY continent HAVING SUM(population)>500000000  # WHERE->GROUP BY->HAVING
+SELECT continent, COUNT(name) AS total FROM world WHERE population > 10000000 GROUP BY continent   
+	# The count of countries with population > 10 million from each continent 
+	### ^NOT: HAVING population > 10000000.  HAVING is always with an aggregate function
+SELECT continent FROM world GROUP BY continent HAVING SUM(population) > 100000000  # Continents that HAVE total pop > 100 mil
+SELECT yr FROM nobel WHERE subject='Physics' GROUP BY yr HAVING COUNT(winner)=3   # years where 3 prizes given in physics
+
+SELECT yr, subject FROM nobel WHERE yr >= 2000 GROUP BY yr, subject HAVING COUNT(winner)=3
+### Need both yr/subject in GROUP BY so that they can be SELECTED
+
+
+"""JOINS:  """
+SELECT DISTINCT goal.player FROM game INNER JOIN goal ON game.id = goal.matchid   # Q8: players who scored against Germany
+WHERE (game.team1='GER' OR game.team2='GER') AND goal.teamid <> 'GER' 
+
+SELECT mdate, team1, SUM(CASE WHEN team1 = teamid THEN 1 else 0 END) AS score1, team2, 
+	SUM(CASE WHEN team2 = teamid THEN 1 else 0 END) AS score2
+	FROM game LEFT JOIN goal ON game.id = goal.matchid  # changed from INNER JOIN since some games had no goals
+	GROUP BY mdate, team1, team2 ORDER BY mdate, matchid, team1, team2  # would be RIGHT JOIN if using goal = game
+
+"""             """
+REPLACE('vessel','e','a')   #'vassal'
+CONCAT(str1, str2)
+SUBSTR(name, start, length)  # works with negative numbers (last <length> chars)
+CONTAINS(column, target_str)
+
+SELECT CONCAT(vend_name, '(', vend_country, ')')  # MySQL
+SELECT vend_name || ' (' || vend_country || ')'
+
+update salary set sex = CHAR(ASCII('f') ^ ASCII('m') ^ ASCII(sex));
+UPDATE salary SET sex = IF(sex='m','f','m');
+UPDATE salary
+SET sex  = (CASE WHEN sex = 'm' THEN  'f' ELSE 'm' END)   # if no Else and everything fails, return NULL
+NVL(x,y) # x if x is not NULL, else y (could be NULL)
+COALESCE(x, y, ...)  # first value that's not NULL (NULL if all are NULL)
+NULLIF(x, y)  # returns NULL if x = y else x
+
+
+
+
+""" """
+# Second largest value
+SELECT MAX(col) FROM table WHERE col < (SELECT MAX(col) FROM table)
+SELECT MAX(col) FROM table WHERE col NOT IN (SELECT MAX(col) FROM table);
+
+CREATE TABLE SpaceMonster(`Account Balance` INT);
+INSERT INTO SpaceMonster VALUES (42);
+SELECT `Account Balance` FROM SpaceMonster   # note backticks
+
+-- https://stackoverflow.com/questions/20388923/database-partitioning-horizontal-vs-vertical-difference-between-normalizatio
+create table data_main (
+    id integer primary key,
+    status char(1) not null,
+    data1 varchar2(10) not null );
+
+create table data_rarely_used (
+    id integer primary key,
+    data2 varchar2(10) not null,
+    foreign key (id) references data_main (id) );
+
+# ceil, floor, pow
+
+# alter table?
