@@ -100,9 +100,80 @@ def dijkstra(graph, start, target=None):  # G = {0:{1:4, 3:2, ...}, 1:{}} - adja
             return res[target]
     return res
 
-def dijkstra2(graph, start, target=None):
+def dijkstra2(graph, start, target=None):  # TODO
     visited = {start}
     not_visited = {graph.keys()} - {start}  # static view
     while not_visited:
         pass
 
+def stringToTreeNode(input):
+    input = input[1:-1]
+    if not input:
+        return None
+    inputValues = [s.strip() for s in input.split(',')]
+    root = TreeNode(int(inputValues[0]))
+    nodeQueue = [root]
+    front = 0
+    index = 1
+    while index < len(inputValues):
+        node = nodeQueue[front]
+        front = front + 1
+        item = inputValues[index]
+        index = index + 1
+        if item != "null":
+            leftNumber = int(item)
+            node.left = TreeNode(leftNumber)
+            nodeQueue.append(node.left)
+        if index >= len(inputValues):
+            break
+        item = inputValues[index]
+        index = index + 1
+        if item != "null":
+            rightNumber = int(item)
+            node.right = TreeNode(rightNumber)
+            nodeQueue.append(node.right)
+    return root
+
+def treeNodeToString(root):
+    output = ""
+    queue = [root]
+    length = 1
+    current = 0
+    while current != length:
+        node = queue[current]
+        current = current + 1
+
+        if not node:
+            output += "null, "
+            continue
+
+        output += str(node.val) + ", "
+        queue.append(output.left)
+        queue.append(output.right)
+    return "[" + output[:-2] + "]"
+
+import sys
+def readlines():
+    for line in sys.stdin:
+        yield line.strip('\n')
+
+def main():
+    lines = readlines()
+    while True:
+        try:
+            line = lines.next()
+            root = stringToTreeNode(line)
+            line = lines.next()
+            m = int(line)
+            line = lines.next()
+            n = int(line)
+            
+            ret = Solution().lowestCommonAncestor(root, m, n)
+
+            out = treeNodeToString(ret)
+            print out
+        except StopIteration:
+            break
+
+if __name__ == '__main__':
+    main()
