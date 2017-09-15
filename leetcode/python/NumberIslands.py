@@ -11,7 +11,7 @@ class Solution(object):
         :rtype: int
         """
         # return self.solution1(grid)  # 145 ms, 38.97% 
-        return self.my_solution(grid)  # 99 ms, 88.00%
+        return self.my_solution(grid)  # 99 ms, 88.00%  # 82 ms, 96.06% with fast version
     
     def solution1(self, grid):  # DFS
         def sink(i, j):
@@ -48,31 +48,31 @@ class Solution(object):
             for j in xrange(len(grid[0])):
                 if grid[i][j] == '1':
                     res += 1
-                    self.bfs_fast(grid, i, j)
+                    self.my_dfs(grid, i, j)
         return res 
         
-    def bfs(self, grid, i, j):  # assume i, j are valid      
+    def my_dfs(self, grid, i, j):  # assume i, j are valid   # Not BFS...    
         if grid[i][j] == '1': # boundary has not been reached from this direction
             grid[i][j] = '0'
             if j > 0:
-                self.bfs(grid, i, j-1)
+                self.my_dfs(grid, i, j-1)
             if j < len(grid[0])-1:
-                self.bfs(grid, i, j+1)
+                self.my_dfs(grid, i, j+1)
             if i > 0:
-                self.bfs(grid, i-1, j)
+                self.my_dfs(grid, i-1, j)
             if i < len(grid)-1:
-                self.bfs(grid, i+1, j)
+                self.my_dfs(grid, i+1, j)
                 
-    def bfs_fast(self, grid, i, j):  # assume i, j are valid AND grid[i][j] == '1'  # actually got same time, though, so very similar
+    def dfs_fast(self, grid, i, j):  # assume i, j are valid AND grid[i][j] == '1'  # faster, since we have less function calls
         grid[i][j] = '0'
         if j > 0 and grid[i][j-1] == '1':
-            self.bfs(grid, i, j-1)
+            self.dfs_fast(grid, i, j-1)
         if j < len(grid[0])-1 and grid[i][j+1] == '1':
-            self.bfs(grid, i, j+1)
+            self.dfs_fast(grid, i, j+1)
         if i > 0 and grid[i-1][j] == '1':
-            self.bfs(grid, i-1, j)
+            self.dfs_fast(grid, i-1, j)
         if i < len(grid)-1 and grid[i+1][j] == '1':
-            self.bfs(grid, i+1, j)  
+            self.dfs_fast(grid, i+1, j)  
     
     #Solution 3: BFS
     # Doesn't work for some reason, fix later
