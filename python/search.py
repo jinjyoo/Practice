@@ -101,7 +101,7 @@ def dfs_undirected_cycle_iter(graph, start):   # iter
 				stack.append(neighbor)
 	return False
 
-def dfs_all_undirected_cycle_iter(graph, start):
+def dfs_all_undirected_cycle_iter(graph, start):  # get all connected components
 	visited = set()
 	# has_cycle = False  # global variable
 	for node in graph:
@@ -121,7 +121,7 @@ def dfs_undirected_cycle_recursive(graph):  # recursive
 				return True
 	return False
 
-def dfs_util(graph, visited, node, parent):
+def dfs_util(graph, visited, node, parent):  # util for above
 	visited.add(node)
 	for neighbor in graph[node]:
 		if neighbor not in visited:   # don't need to check neighbor != parent since it should be in visited
@@ -172,8 +172,9 @@ def dfs_directed_cycle_colors(graph):  # http://www.geeksforgeeks.org/detect-cyc
 def color_cycle(graph, colors, start):
     colors[start] = 'gray'
     for node in graph[start]:
-        if colors[node] == 'white' and color_cycle(graph, colors, node):  ### split into two lines like above?
-            return True
+        if colors[node] == 'white':
+            if color_cycle(graph, colors, node):  
+                return True
         elif colors[node] == 'gray':  # if node in rec_stack; gray -> back edge
             return True
         # else:  # black -> skip
@@ -246,7 +247,12 @@ def bfs_topological_check(graph):    # Kahn's algorithm
 
 
 
+["XXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXOOOXXXXXXXX",
+"XXXXXOOOXOXOXXXXXXXX",
+"XXXXXOXOXOXOOOXXXXXX",
+"XXXXXOXOOOXXXXXXXXXX",
+"XXXXXOXXXXXXXXXXXXXX"]
 
 
-
-
+["XXXXXXXXXXXXXXXXXXXX","XXXXXXXXXOOOXXXXXXXX","XXXXXOOOXOXOXXXXXXXX","XXXXXOXOXOXOOOXXXXXX","XXXXXOXOOOXXXXXXXXXX","XXXXXOXXXXXXXXXXXXXX"]

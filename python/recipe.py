@@ -1,6 +1,6 @@
 import itertools as it
 
-"""Primes"""  
+"""Generators"""  
 # https://stackoverflow.com/questions/2068372/fastest-way-to-list-all-primes-below-n
 # https://stackoverflow.com/questions/622/most-efficient-code-for-the-first-10000-prime-numbers?noredirect=1&lq=1
 # ^See: Sieve of Atkins
@@ -25,19 +25,30 @@ def primes(n):
 def erat():
     sieve = {}
     yield 2
-    for q in it.islice(it.count(3), 0, None, 2):
+    for q in it.islice(it.count(3), 0, None, 2):  # use instead of xrange because we want infinite; could use while True loop
         p = sieve.pop(q, None)
         if p is None:
-            sieve[q*q] = q
-            yield q
-        else:
+            sieve[q*q] = q   # q has no known factors -> q is prime, store q*q (not-composite) with q as smallest factor
+            yield q          
+        else:  # q has a known factor
+            # let x <- smallest (N*p)+q which wasn't yet known to be composite
+            # we just learned x is composite, with p first-found prime factor,
+            # since p is the first-found prime factor of q -- find and mark it
+            x = q + 2*p     # q, p are odd so x is odd
+            while x in D:   # D only has odd keys, so we can up by 2*p 
+                x += 2*p    # x = N*p + q, N += 2
+            sieve[x] = p    # p | q and p | Np, so p | x
             # x = p + q   # Old code
             # while x in D or not (x&1):
-            #     x += p
-            x = q + 2*p    
-            while x in D:
-                x += 2*p
-            sieve[x] = p
+            #     x += p  # x = n*p + q, n++
+
+def solution3(self, n, primes): #https://leetcode.com/problems/super-ugly-number/discuss/ 
+    uglies = [1]
+    merged = heapq.merge(*map(lambda p: (u*p for u in uglies), primes))  # since primes are sorted, u*p is sorted, and we can use merge
+    uniqued = (u for u, _ in itertools.groupby(merged))
+    map(uglies.append, itertools.islice(uniqued, n-1))  # only n-2 appends because we already have 1, and primes won't include 1
+    return uglies[-1]                                   # ^since uglies continues to get appended, merged/uniqued can keep generating
+    # return list(itertools.islice(uniqued, n-1, n))    # See above
 
 """Decorators"""
 def memo(func):
@@ -47,6 +58,50 @@ def memo(func):
             cache[x] = func(x)
         return cache[x]
     return wrapper
+
+# Pitfalls: https://leetcode.com/problems/minimum-path-sum/discuss/
+class Memoize(object):  # https://www.python-course.eu/python3_memoization.php  
+    def __init__(self, fn):
+        self.fn = fn
+        self.memo = {}
+    def __call__(self, *args):
+        if args not in self.memo:
+            self.memo[args] = self.fn(*args)
+        return self.memo[args]
+
+def memo(func): # Problem: only one copy of cache, need to tie to self
+    cache = {}  # grid is not hashable, so we can't pass it in
+    @functools.wraps(func)
+    def decorated_function(self, *args):  # self is defined at runtime, so OK here (just not at parsetime -> "@self.memo")
+        if args not in cache:  
+            cache[args] = func(self, *args)  # cannot do self.func, because then Solution looks for a function called func
+        return cache[args]
+    return decorated_function
+
+class memoized(object):  # https://coderwall.com/p/qnmxkw/python-memoize-decorator
+   '''Decorator. Caches a function's return value each time it is called.
+   If called later with the same arguments, the cached value is returned
+   (not reevaluated).
+   '''
+   def __init__(self, func):
+      self.func = func
+      self.cache = {}
+   def __call__(self, *args):
+      if not isinstance(args, collections.Hashable):
+         # uncacheable. a list, for instance. Better to not cache than blow up.
+         return self.func(*args)
+      if args in self.cache:
+         return self.cache[args]
+      else:
+         value = self.func(*args)
+         self.cache[args] = value
+         return value
+   def __repr__(self):
+      '''Return the function's docstring.'''
+      return self.func.__doc__
+   def __get__(self, obj, objtype):
+      '''Support instance methods.'''
+      return functools.partial(self.__call__, obj)
 
 
 from timeit import default_timer as timer
@@ -177,3 +232,19 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+import unitttest
+class MyTest(unittest.TestCase):
+    def test_method():  # (all methods must start with ‘test’)
+        pass
+
+class TestSample(unittest.TestCase):    
+    def setUp(self):
+        self.a = 10
+
+    def tearDown(self):
+        # tear down code
+
+    @decorator
+    def test_a(self):
+        # testing code goes here
