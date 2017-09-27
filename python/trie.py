@@ -1,9 +1,13 @@
+# https://leetcode.com/problems/implement-trie-prefix-tree/description/
+# https://leetcode.com/problems/add-and-search-word-data-structure-design/description/
+# https://github.com/yangshun/tech-interview-handbook/blob/master/utilities/python/trie.py
+
 class Node():
     
     def __init__(self):
         # self.char = char  ### actually not needed
         self.is_leaf = False
-        self.children = {}  # will store char: node that has this char (small -> big)
+        self.letters = {}  # will store char: node that has this char (small -> big)
 
 class Trie(object):   # 57%
 
@@ -21,9 +25,9 @@ class Trie(object):   # 57%
         """
         node = self.root
         for c in word:
-            if c not in node.children:
-                node.children[c] = Node()  
-            node = node.children[c]
+            if c not in node.letters:
+                node.letters[c] = Node()  
+            node = node.letters[c]
         node.is_leaf = True  # points to last node   
         ### Note that this marks an EMPTY node as a leaf, but it is UNIQUE to that letter
         # Cannot mark the node with the last letter itself as a leaf, because it could share that node with other children
@@ -37,9 +41,9 @@ class Trie(object):   # 57%
         """
         node = self.root
         for c in word:
-            if c not in node.children:
+            if c not in node.letters:
                 return False
-            node = node.children[c]
+            node = node.letters[c]
         return node.is_leaf  
 
     def startsWith(self, prefix):
@@ -50,10 +54,32 @@ class Trie(object):   # 57%
         """
         node = self.root
         for c in prefix:
-            if c not in node.children:
+            if c not in node.letters:
                 return False
-            node = node.children[c]
+            node = node.letters[c]
         return True
+
+    def regex(self, word):
+        """
+        Returns if the word is in the data structure. A word could contain the dot character '.' to represent any one letter.
+        :type word: str
+        :rtype: bool
+        """
+        return self.helper(self.root, word, 0)
+                        
+    def helper(self, node, word, start):  # slicing would create many strings so just carry the start index
+        for i in xrange(start, len(word)):
+            # if word[i] == '.':
+            #     for child in node.letters.itervalues():
+            #         if self.helper(child, word, i+1):
+            #             return True
+            #     return False
+            if letter == '.':
+                return any(self.helper(child, word, i+1) for child in node.letters.itervalues())
+            if word[i] not in node.letters:
+                return False
+            node = node.letters[word[i]]
+        return node.is_leaf
     
     def delete(self, word):  # not asked for, but for practice
         """ 
@@ -68,18 +94,18 @@ class Trie(object):   # 57%
         # delete_start = None      # cannot proactively check if no children, since a later child might have children
         node = self.root
         for depth, c in enumerate(word):
-            if c not in node.children:
+            if c not in node.letters:
             	print "Case 1: Not in trie."
                 return   # Case 1, not in tree
-            letter = node.children[c]   ### note that the child is the letter being checked, NOT node
+            letter = node.letters[c]   ### note that the child is the letter being checked, NOT node
             # Has to be > 1 since == 1 is just the one child that's going to be deleted            
             # cannot exempt last letter if leaf
-            if len(letter.children) > 1 or letter.is_leaf and depth != len(word)-1:   # Setup for Case 3
+            if len(letter.letters) > 1 or letter.is_leaf and depth != len(word)-1:   # Setup for Case 3
                 exempt_node = letter  # letter is *exempt*, deletions start after 
                 exempt_depth = depth
                 # exempt_depth += 1    # inaccurate since won't reflect if nodes are skipped 
             node = letter  # Technically unnecessary (could've just assigned to node from start), but clearer this way
-        if node.children:  # Case 2  # at this point, node is the leaf of this word
+        if node.letters:  # Case 2  # at this point, node is the leaf of this word
         	print "Case 2: prefix of a longer word, so don't remove."
         	node.is_leaf = False
         	return
@@ -91,7 +117,7 @@ class Trie(object):   # 57%
         if node:  # Case 3; Case 4 if overlap_end = self.root   # technically not needed, otherwise would've been caught in Case 2
             print "Case 3: deleting at least one node (could be all)"
             for c in word[exempt_depth+1:]:
-            	node = node.children.pop(c)  # node was exempt so we check the children
+            	node = node.letters.pop(c)  # node was exempt so we check the children
 
 if __name__ == "__main__":
 	t = Trie()
